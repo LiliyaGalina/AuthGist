@@ -17,6 +17,7 @@ namespace AuthGist
     {
         public Startup(IConfiguration configuration)
         {
+
             Configuration = configuration;
         }
 
@@ -26,6 +27,8 @@ namespace AuthGist
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            var _somesecret = Configuration["Authentication:AzureAdB2C:ClientId"];
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
@@ -37,10 +40,13 @@ namespace AuthGist
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                
             }
+
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
@@ -61,6 +67,7 @@ namespace AuthGist
             {
                 endpoints.MapControllers();
             });
-        }
+
+         }
     }
 }
