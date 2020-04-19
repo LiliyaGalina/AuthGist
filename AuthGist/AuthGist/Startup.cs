@@ -8,6 +8,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using AuthGist.Extensions;
 
 namespace AuthGist
 {
@@ -31,22 +33,27 @@ namespace AuthGist
                 .AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling =
                 Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-            services.Configure<CookiePolicyOptions>(options =>
+            //services.Configure<CookiePolicyOptions>(options =>
+            //{
+            //    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
+            //    options.CheckConsentNeeded = context => true;
+            //    options.MinimumSameSitePolicy = SameSiteMode.None;
+            //});
+
+            //services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
+            //    .AddAzureAD(options => Configuration.Bind("AzureAd", options));
+
+            //services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
+            //{
+            //    options.Authority = options.Authority + "/v2.0/";
+            //    options.TokenValidationParameters.ValidateIssuer = false;
+
+            //});
+
+            services.AddAuthentication(sharedOptions =>
             {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-            });
-
-            services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
-                .AddAzureAD(options => Configuration.Bind("AzureAd", options));
-
-            services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
-            {
-                options.Authority = options.Authority + "/v2.0/";
-                options.TokenValidationParameters.ValidateIssuer = false;
-
-            });
+                sharedOptions.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddAzureAdBearer(options => Configuration.Bind("AzureAd", options));
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
