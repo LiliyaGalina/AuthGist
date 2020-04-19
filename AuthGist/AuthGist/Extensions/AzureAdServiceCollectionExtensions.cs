@@ -34,6 +34,7 @@ namespace AuthGist.Extensions
             {
                 options.Audience = _azureOptions.ClientId;
                 options.Authority = $"{_azureOptions.Instance}{_azureOptions.TenantId}";
+                options.TokenValidationParameters.ValidateIssuer = false;
             }
 
             public void Configure(JwtBearerOptions options)

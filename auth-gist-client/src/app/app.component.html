@@ -9,6 +9,29 @@
 <ul>
     <button (click)="login()">log in</button>
     <button (click)="logout()">log out</button>
+    <button (click)="copyToken()">copy token into buffer</button>
+    <button (click)="getResponse()">refresh response</button>
 </ul>
+
+<div>
+    <h4>api response</h4>
+    <p>
+        {{ response | json}}
+    </p>
+</div>
+
+<div>
+    <h4>token</h4>
+    <p>
+        {{ getToken()}}
+    </p>
+</div>
+<div>
+    <h4>access token</h4>
+    <p>
+        {{ getAccessToken() | async}}
+    </p>
+</div>
+
 
 <router-outlet></router-outlet>
