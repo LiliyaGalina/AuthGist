@@ -17,6 +17,7 @@ using System.Reflection;
 using System.IO;
 using System;
 using AuthGist.SettingsModels;
+using AuthGist.NewFolder;
 
 namespace AuthGist
 {
@@ -56,49 +57,64 @@ namespace AuthGist
 
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "You api title", Version = "v1" });
 
-                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme()
+                c.OperationFilter<AuthorizeCheckOperationFilter>();
+
+                c.AddSecurityDefinition("aad-jwt", new OpenApiSecurityScheme()
                 {
                     Type = SecuritySchemeType.OAuth2,
                     Flows = new OpenApiOAuthFlows()
                     {
                         Implicit = new OpenApiOAuthFlow()
                         {
-                            //TokenUrl = new Uri($"{options.Instance}/{options.TenantId}/oauth2/v2.0/token"),
+                            TokenUrl = new Uri($"{options.Instance}/{options.TenantId}/oauth2/v2.0/token"),
                             AuthorizationUrl = new Uri($"{options.Instance}/{options.TenantId}/oauth2/v2.0/authorize"),
                             Scopes = { { options.Scope, options.ScopeDescription } }
                         }
                     }
                 });
 
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = @"JWT Authorization header using the Bearer scheme. 
+                      Enter 'Bearer' [space] and then your token in the text input below.
+                      Example: 'Bearer 12345abcdef'",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
 
-                //c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                //{
-                //    Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-                //      Enter 'Bearer' [space] and then your token in the text input below.
-                //      \r\n\r\nExample: 'Bearer 12345abcdef'",
-                //    Name = "Authorization",
-                //    In = ParameterLocation.Header,
-                //    Type = SecuritySchemeType.ApiKey,
-                //    Scheme = "Bearer"
-                //});
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
+                    {
+                      new OpenApiSecurityScheme
+                      {
+                        Reference = new OpenApiReference
+                          {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                          },
+                          Scheme = "oauth2",
+                          Name = "Bearer",
+                          In = ParameterLocation.Header,
+
+                        },
+                        new List<string>()
+                      }
+                    });
 
                 //c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
                 //    {
-                //      new OpenApiSecurityScheme
-                //      {
-                //        Reference = new OpenApiReference
-                //          {
-                //            Type = ReferenceType.SecurityScheme,
-                //            Id = "Bearer"
-                //          },
-                //          Scheme = "oauth2",
-                //          Name = "Bearer",
-                //          In = ParameterLocation.Header,
-
+                //     new OpenApiSecurityScheme
+                //        {
+                //            Reference = new OpenApiReference
+                //            {
+                //                Type = ReferenceType.SecurityScheme,
+                //                Id = "aad-jwt"
+                //            },
+                //            UnresolvedReference = true
                 //        },
-                //        new List<string>()
-                //      }
-                //    });
+                //        new List<string>() { options.Scope }
+                //    } });
 
 
             });
@@ -130,7 +146,8 @@ namespace AuthGist
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
-
+            AzureAdOptions azoptions = new AzureAdOptions();
+            Configuration.Bind("AzureAd", azoptions);
             SwaggerADOptions options = new SwaggerADOptions();
             Configuration.Bind("SwaggerClient", options);
 
