@@ -16,6 +16,7 @@ using System.Linq;
 using System.Reflection;
 using System.IO;
 using System;
+using AuthGist.SettingsModels;
 
 namespace AuthGist
 {
@@ -39,72 +40,75 @@ namespace AuthGist
                 .AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling =
                 Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-            //services.Configure<CookiePolicyOptions>(options =>
-            //{
-            //    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-            //    options.CheckConsentNeeded = context => true;
-            //    options.MinimumSameSitePolicy = SameSiteMode.None;
-            //});
-
-            //services.AddAuthentication(AzureADDefaults.AuthenticationScheme)
-            //    .AddAzureAD(options => Configuration.Bind("AzureAd", options));
-
-            //services.Configure<OpenIdConnectOptions>(AzureADDefaults.OpenIdScheme, options =>
-            //{
-            //    options.Authority = options.Authority + "/v2.0/";
-            //    options.TokenValidationParameters.ValidateIssuer = false;
-
-            //});
-
             services.AddAuthentication(sharedOptions =>
             {
                 sharedOptions.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddAzureAdBearer(options => Configuration.Bind("AzureAd", options));
+
+
+
+            AzureAdOptions options = new AzureAdOptions();
+            Configuration.Bind("AzureAd", options);
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
 
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "You api title", Version = "v1" });
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+
+                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme()
                 {
-                    Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-                      Enter 'Bearer' [space] and then your token in the text input below.
-                      \r\n\r\nExample: 'Bearer 12345abcdef'",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer"
+                    Type = SecuritySchemeType.OAuth2,
+                    Flows = new OpenApiOAuthFlows()
+                    {
+                        Implicit = new OpenApiOAuthFlow()
+                        {
+                            //TokenUrl = new Uri($"{options.Instance}/{options.TenantId}/oauth2/v2.0/token"),
+                            AuthorizationUrl = new Uri($"{options.Instance}/{options.TenantId}/oauth2/v2.0/authorize"),
+                            Scopes = { { options.Scope, options.ScopeDescription } }
+                        }
+                    }
                 });
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
-                    {
-                      new OpenApiSecurityScheme
-                      {
-                        Reference = new OpenApiReference
-                          {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                          },
-                          Scheme = "oauth2",
-                          Name = "Bearer",
-                          In = ParameterLocation.Header,
 
-                        },
-                        new List<string>()
-                      }
-                    });
+                //c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                //{
+                //    Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
+                //      Enter 'Bearer' [space] and then your token in the text input below.
+                //      \r\n\r\nExample: 'Bearer 12345abcdef'",
+                //    Name = "Authorization",
+                //    In = ParameterLocation.Header,
+                //    Type = SecuritySchemeType.ApiKey,
+                //    Scheme = "Bearer"
+                //});
 
-                //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                //c.IncludeXmlComments(xmlPath);
+                //c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
+                //    {
+                //      new OpenApiSecurityScheme
+                //      {
+                //        Reference = new OpenApiReference
+                //          {
+                //            Type = ReferenceType.SecurityScheme,
+                //            Id = "Bearer"
+                //          },
+                //          Scheme = "oauth2",
+                //          Name = "Bearer",
+                //          In = ParameterLocation.Header,
+
+                //        },
+                //        new List<string>()
+                //      }
+                //    });
+
 
             });
 
             services.AddCors((options =>
             {
                 options.AddPolicy("AzurePolicy", builder => builder
-                            .WithOrigins("http://localhost:4200", "Access-Control-Allow-Origin",  "Access-Control-Allow-Credentials")
+                            .WithOrigins("http://localhost:4200", 
+                                "Access-Control-Allow-Origin",
+                                "Access-Control-Allow-Credentials")
                             .AllowAnyMethod()
                             .AllowAnyHeader()
                             .AllowCredentials()
@@ -126,12 +130,21 @@ namespace AuthGist
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
+
+            SwaggerADOptions options = new SwaggerADOptions();
+            Configuration.Bind("SwaggerClient", options);
+
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
                 c.RoutePrefix = string.Empty;
+
+                //
+
+                c.OAuthClientId(options.ClientId);
+                c.OAuthScopeSeparator(" ");
             });
 
             app.UseHttpsRedirection();
