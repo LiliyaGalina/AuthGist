@@ -9,8 +9,9 @@
 <ul>
     <button (click)="login()">log in</button>
     <button (click)="logout()">log out</button>
-    <button (click)="copyToken()">copy token into buffer</button>
-    <button (click)="getResponse()">refresh response</button>
+    <button *ngIf="token" (click)="copyIntoBuffer(token)">copy token</button>
+    <button *ngIf="accessToken" (click)="copyIntoBuffer(accessToken)">copy access token</button>
+    <button *ngIf="accessToken" (click)="getResponse()">refresh response</button>
 </ul>
 
 <div>
@@ -20,16 +21,16 @@
     </p>
 </div>
 
-<div>
+<div *ngIf="token">
     <h4>token</h4>
     <p>
-        {{ getToken()}}
+        {{ token }}
     </p>
 </div>
-<div>
+<div *ngIf="accessToken">
     <h4>access token</h4>
     <p>
-        {{ getAccessToken() | async}}
+        {{ accessToken }}
     </p>
 </div>
 

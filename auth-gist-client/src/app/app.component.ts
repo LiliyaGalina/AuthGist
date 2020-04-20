@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MsAdalAngular6Service } from 'microsoft-adal-angular6';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -10,32 +10,34 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 })
 export class AppComponent {
 
+
   title = 'auth-gist-client';
   accessToken: string;
+  token: string;
   response = null;
 
   constructor(private adalService: MsAdalAngular6Service,
     private http: HttpClient) {
 
+    this.token = this.adalService.accessToken;
+    this.adalService.acquireToken('https://localhost:44321').subscribe(
+      token => this.accessToken = token);
+
   }
 
   getResponse() {
-    this.adalService.acquireToken('backend-api-uri').subscribe(
-      token => {
-        const authtoken = `Bearer ${token}`;
-        const headerss = new HttpHeaders().set('Authorization', authtoken);
 
-        this.http.get("https://localhost:44321/WeatherForecast", {
-          headers: headerss
-        }).subscribe(data => {
-          this.response = data;
-        });
+    const token = this.accessToken;
+    const authtoken = `Bearer ${token}`;
+    const headerss = new HttpHeaders().set('Authorization', authtoken);
 
-      }
-    )
+    this.http.get('https://localhost:44321/WeatherForecast', {
+      headers: headerss
+    }).subscribe(data => {
+      this.response = data;
+    });
 
   }
-
 
   login(): void {
     this.adalService.login();
@@ -50,16 +52,16 @@ export class AppComponent {
   }
 
   getAccessToken(): Observable<any> {
-    return this.adalService.acquireToken('backend-api-uri');
+    return this.adalService.acquireToken('https://localhost:44321');
   }
 
-  copyToken() {
+  copyIntoBuffer(content) {
     const selBox = document.createElement('textarea');
     selBox.style.position = 'fixed';
     selBox.style.left = '0';
     selBox.style.top = '0';
     selBox.style.opacity = '0';
-    selBox.value = this.getToken();
+    selBox.value = content;
     document.body.appendChild(selBox);
     selBox.focus();
     selBox.select();
@@ -67,8 +69,4 @@ export class AppComponent {
     document.body.removeChild(selBox);
   }
 
-  getToken(): string {
-    const token = this.adalService.accessToken;
-    return token;
-  }
 }
