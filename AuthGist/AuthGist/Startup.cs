@@ -18,6 +18,8 @@ using System.IO;
 using System;
 using AuthGist.SettingsModels;
 using AuthGist.NewFolder;
+using AuthGist.Service;
+using Microsoft.Extensions.Options;
 
 namespace AuthGist
 {
@@ -35,7 +37,12 @@ namespace AuthGist
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.Configure<AzureAdOptions>(Configuration.GetSection("AzureAd"));
+            services.Configure<SwaggerADOptions>(Configuration.GetSection("SwaggerClient"));
+
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>(); 
+            services.AddSingleton<UserClaimsAccessor>(); 
+            services.AddSingleton<GraphService>();
 
             services.AddControllers()
                 .AddNewtonsoftJson(x => x.SerializerSettings.ReferenceLoopHandling =
@@ -46,11 +53,8 @@ namespace AuthGist
                 sharedOptions.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddAzureAdBearer(options => Configuration.Bind("AzureAd", options));
 
-
-
             AzureAdOptions options = new AzureAdOptions();
             Configuration.Bind("AzureAd", options);
-
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
@@ -102,21 +106,6 @@ namespace AuthGist
                       }
                     });
 
-                //c.AddSecurityRequirement(new OpenApiSecurityRequirement() {
-                //    {
-                //     new OpenApiSecurityScheme
-                //        {
-                //            Reference = new OpenApiReference
-                //            {
-                //                Type = ReferenceType.SecurityScheme,
-                //                Id = "aad-jwt"
-                //            },
-                //            UnresolvedReference = true
-                //        },
-                //        new List<string>() { options.Scope }
-                //    } });
-
-
             });
 
             services.AddCors((options =>
@@ -146,10 +135,11 @@ namespace AuthGist
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
-            AzureAdOptions azoptions = new AzureAdOptions();
-            Configuration.Bind("AzureAd", azoptions);
-            SwaggerADOptions options = new SwaggerADOptions();
-            Configuration.Bind("SwaggerClient", options);
+            var serviceProvider = app.ApplicationServices;
+            var hostingEnv = serviceProvider.GetService<IOptions<AzureAdOptions>>();
+
+            var azureOptions = serviceProvider.GetService<IOptions<AzureAdOptions>>().Value;
+            var swaggerOptions = serviceProvider.GetService<IOptions<SwaggerADOptions>>().Value;
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
             // specifying the Swagger JSON endpoint.
@@ -160,7 +150,7 @@ namespace AuthGist
 
                 //
 
-                c.OAuthClientId(options.ClientId);
+                c.OAuthClientId(swaggerOptions.ClientId);
                 c.OAuthScopeSeparator(" ");
             });
 

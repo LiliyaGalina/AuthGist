@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using AuthGist.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +22,15 @@ namespace AuthGist.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly UserClaimsAccessor _userClaimsAccessor;
+        private readonly GraphService _graphService;
 
-        public WeatherForecastController(IHttpContextAccessor httpContextAccessor,
-            ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(UserClaimsAccessor userClaimsAccessor,
+            ILogger<WeatherForecastController> logger, GraphService graphService)
         {
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
+            _userClaimsAccessor = userClaimsAccessor;
+            _graphService = graphService;
         }
 
         [HttpGet]
@@ -43,17 +47,24 @@ namespace AuthGist.Controllers
         }
 
         [HttpGet("allclaims")]
-        public IEnumerable<Claim> GetAllClaims()
+        public IEnumerable<string> GetAllClaims()
         {
-            return _httpContextAccessor.HttpContext.User.Claims.ToList();
+            return _userClaimsAccessor.ClaimNames;
+        }
+
+        [HttpGet("users")]
+        public async Task<IEnumerable<object>> GetAllUsers()
+        {
+            return await _graphService.ListUsers();
         }
 
         [HttpGet("name-by-auth")]
         public string GetName()
         {
-            var result = _httpContextAccessor.HttpContext.User.Claims
-                .FirstOrDefault(c=>c.Type == "name")?.Value;
+            var result = _userClaimsAccessor.Name;
             return result;
         }
+
+
     }
 }
